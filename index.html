@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Rat Dash Chaos - Arcade Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+body{
+  margin:0;
+  background:#0a0a12;
+  overflow:hidden;
+  font-family:'Press Start 2P', monospace;
+  user-select: none;
+}
+#gameContainer{
+  position:fixed;
+  inset:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#000;
+}
+canvas{
+  background: linear-gradient(to bottom, #111122, #1a1a2e);
+  display:block;
+  touch-action:none;
+  transition: filter 0.3s ease;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+  border: 4px solid #222;
+}
+canvas.blur-filter {
+  filter: blur(6px) grayscale(80%);
+}
+.ui{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  color:white;
+  text-align:center;
+  z-index:10;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+#menu{
+  background:url("assets/inicialscreen.png") center/cover no-repeat;
+}
+#menu::before, #settingsMenu::before, #pauseOverlay::before, #gameover::before, #modeMenu::before, #introOverlay::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:rgba(10, 10, 20, 0.75);
+}
+#menu > *, #settingsMenu > *, #pauseOverlay > *, #gameover > *, #modeMenu > *, #introOverlay > *{ position:relative; z-index:2; }
+h1 {
+  font-size: 26px;
+  margin-bottom: 25px;
+  text-shadow: 4px 4px #000;
+  letter-spacing: 2px;
+  color: #f39c12;
+}
+p {
+  font-size: 11px;
+  line-height: 1.8;
+  text-shadow: 2px 2px #000;
+}
+button{
+  font-family:'Press Start 2P';
+  padding:14px 28px;
+  margin:10px;
+  font-size:11px;
+  cursor: pointer;
+  background-color: #e67e22;
+  color: white;
+  border: 4px solid #d35400;
+  box-shadow: 0 5px #000;
+  text-transform: uppercase;
+  transition: all 0.1s ease, opacity 0.3s ease;
+}
+button:hover {
+  background-color: #f39c12;
+}
+button:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px #000;
+}
+#settingsBtn {
+  background-color: #444;
+  border-color: #2b2b2b;
+  margin-bottom: 40px; 
+}
+.secondary-btn {
+  background-color: #444;
+  border-color: #2b2b2b;
+}
+#hardcoreBtn {
+  background-color: #c0392b;
+  border-color: #962d22;
+}
+.hidden{ 
+  opacity: 0 !important;
+  pointer-events: none !important; 
+}
+#pauseBtn{
+  position:fixed;
+  top:12px;
+  right:12px;
+  z-index:20;
+  background: #222;
+  border: 3px solid #444;
+  padding: 10px 14px;
+  color: white;
+  font-family: monospace;
+  cursor: pointer;
+  box-shadow: 0 3px #000;
+}
+#pauseBtn:active{ transform: translateY(2px); box-shadow:0 1px #000; }
+#lifeOverlay{
+  background:rgba(5, 5, 10, 0.85);
+  z-index:50;
+}
+#settingsMenu, #pauseOverlay, #gameover, #modeMenu, #introOverlay {
+  z-index: 60;
+}
+.setting-row {
+  margin: 18px 0;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 300px;
+}
+.setting-row button {
+  padding: 8px 16px;
+  margin: 0;
+}
+
+.social-container {
+  position: absolute;
+  bottom: 20px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.x-btn {
+  background-color: #1da1f2;
+  border-color: #0d8bd9;
+  font-size: 8px;
+  padding: 10px 14px;
+  border-radius: 0;
+  margin: 0;
+  white-space: nowrap;
+}
+.x-btn:hover { background-color: #40aff5; }
+
+.donate-btn {
+  background-color: #2ecc71;
+  border-color: #27ae60;
+  font-size: 8px;
+  padding: 10px 14px;
+  margin: 0;
+}
+.donate-btn:hover { background-color: #2ece77; }
+
+#toastNotification {
+  position: fixed;
+  bottom: 80px;
+  background: #111;
+  border: 2px solid #2ecc71;
+  color: #2ecc71;
+  padding: 8px 16px;
+  font-size: 9px;
+  z-index: 100;
+  box-shadow: 0 4px #000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+#introOverlay {
+  transition: opacity 0.4s ease-in-out;
+}
+.dialog-box {
+  background: #11111e;
+  border: 4px solid #f39c12;
+  padding: 20px;
+  width: 480px;
+  max-width: 90vw;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.8);
+  text-align: left;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.ninja-avatar {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  border: 2px solid #555;
+  background: #222;
+  flex-shrink: 0;
+}
+.dialog-text {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #fff;
+  word-break: break-word;
+  white-space: pre-wrap;
+  flex-grow: 1;
+}
+</style>
+</head>
+<body>
+
+<div id="gameContainer">
+  <canvas id="game"></canvas>
+</div>
+
+<button id="pauseBtn">⏸</button>
+
+<div id="toastNotification">WALLET COPIED! ✨</div>
+
+<div id="menu" class="ui">
+  <h1>🐀 RAT DASH CHAOS</h1>
+  <button id="playMenuBtn">PLAY</button>
+  <button id="settingsBtn">SETTINGS</button>
+  
+  <div class="social-container">
+    <button class="x-btn" onclick="window.open('https://x.com/OgRats_', '_blank')">X: OG RATS 🐀</button>
+    <button class="x-btn" onclick="window.open('https://x.com/NinjaRoninN', '_blank')">X: NINJA RONIN ⚔️</button>
+    <button class="donate-btn" id="donateBtn">☕ DONATE</button>
+  </div>
+</div>
+
+<div id="modeMenu" class="ui hidden">
+  <h1>SELECT MODE</h1>
+  <button id="normalBtn">NORMAL</button>
+  <button id="hardcoreBtn">HARDCORE 🔥</button>
+  <button id="backToMenuBtn" class="secondary-btn">BACK</button>
+</div>
+
+<div id="introOverlay" class="ui hidden">
+  <div class="dialog-box" id="dialogBox" title="Double click to skip">
+    <img src="assets/GiNinja.png" alt="GiNinja" class="ninja-avatar">
+    <div id="typedText" class="dialog-text"></div>
+  </div>
+  <button id="readyBtn" class="hidden">READY</button>
+</div>
+
+<div id="settingsMenu" class="ui hidden">
+  <h1>SETTINGS</h1>
+  <div class="setting-row">
+    <span>SOUNDS:</span>
+    <button id="soundToggleBtn">ON</button>
+  </div>
+  <div class="setting-row">
+    <span>MUSIC:</span>
+    <button id="musicToggleBtn">ON</button>
+  </div>
+  <button id="closeSettingsBtn" class="secondary-btn">BACK</button>
+</div>
+
+<div id="pauseOverlay" class="ui hidden">
+  <h1>⏸ PAUSED</h1>
+  <button id="resumePauseBtn">RESUME</button>
+  <button id="pauseSettingsBtn" class="secondary-btn">SETTINGS</button>
+  <button id="quitBtn" class="secondary-btn">QUIT TO MENU</button>
+</div>
+
+<div id="lifeOverlay" class="ui hidden">
+  <h1>LIVES</h1>
+  <h2 id="lifeText" style="font-size:14px; margin-bottom:20px; color:#e74c3c;"></h2>
+  <button id="resumeBtn">PLAY AGAIN</button>
+</div>
+
+<div id="gameover" class="ui hidden">
+  <h1>GAME OVER</h1>
+  <p id="finalScore"></p>
+  <p id="bestScore" style="color: #f1c40f;"></p>
+  <button id="retryBtn">RETRY</button>
+  <button id="quitFromGameOverBtn" class="secondary-btn">MENU</button>
+  <button id="shareX" class="secondary-btn">SHARE ON X</button>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const V_WIDTH = 800;
+const V_HEIGHT = 450;
+
+function resize() {
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+  let scale = Math.min(windowWidth / V_WIDTH, windowHeight / V_HEIGHT);
+  
+  canvas.width = V_WIDTH;
+  canvas.height = V_HEIGHT;
+  canvas.style.width = (V_WIDTH * scale) + "px";
+  canvas.style.height = (V_HEIGHT * scale) + "px";
+}
+window.addEventListener("resize", resize);
+resize();
+
+let lastTime = performance.now();
+const fpsInterval = 1000 / 60; 
+
+let state = "menu";
+let gameMode = "normal"; 
+
+const bgMusic = new Audio("assets/ogratmusic.mp3");
+bgMusic.loop = true;
+
+const playerImg = new Image(); playerImg.src = "assets/rat_run.png";
+const floorObstacleImg = new Image(); floorObstacleImg.src = "assets/hongo.png"; 
+const dangerImg = new Image(); dangerImg.src = "assets/danger1.png";
+const bgImg = new Image(); bgImg.src = "assets/gameplaybackground1.png";
+
+const floorImg = new Image(); floorImg.src = "assets/floor.png";
+const floorForestImg = new Image(); floorForestImg.src = "assets/floorforest.png";
+
+const heartImg = new Image(); heartImg.src = "assets/heart.png";
+const heartEmptyImg = new Image(); heartEmptyImg.src = "assets/heart_empty.png";
+const quesoImg = new Image(); quesoImg.src = "assets/queso.png";
+const plataformaImg = new Image(); plataformaImg.src = "assets/plataforma.png";
+const lavaImg = new Image(); lavaImg.src = "assets/lava.png";
+
+const hongo2Img = new Image(); hongo2Img.src = "assets/hongo2.png";
+const tanquesImg = new Image(); tanquesImg.src = "assets/tanques.png";
+const monketurtleImg = new Image(); monketurtleImg.src = "assets/monketurtle.png"; 
+const fuegoImg = new Image(); fuegoImg.src = "assets/fuego.png"; 
+const coinImg = new Image(); coinImg.src = "assets/coin.png"; 
+
+let scoreRun = 0;
+let level = 1;
+let lives = 3;
+const MAX_LIVES = 5; 
+let coins = 0; 
+
+let highScore = localStorage.getItem("rat_dash_highscore") || 0;
+let soundEnabled = true;
+let musicEnabled = true;
+
+let frame = 0;
+let tick = 0;
+let gameTime = 0; 
+let bgScrollX = 0;
+let floorScrollX = 0; 
+
+// Sistema de transiciones de entorno corregido
+let currentZone = 0; 
+let floorTransitionAlpha = 0; 
+
+let invincible = false;
+let invincibleTimer = 0;
+
+let particles = [];
+let floatingTexts = [];
+let shakeTimer = 0;
+let shakeIntensity = 0;
+let gameOverDelayTimer = 0; 
+
+let introText = "Let's see how far you can make it in the rat race... Don't get caught by the lava chaos!";
+let textIndex = 0;
+let typeInterval = null;
+
+let audioCtx = null;
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playBlipSound() {
+  if (!soundEnabled) return;
+  try {
+    initAudio();
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(600, audioCtx.currentTime); 
+    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);    
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.05);
+  } catch(e) {}
+}
+
+function playJumpSound() {
+  if (!soundEnabled) return;
+  try {
+    initAudio();
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(250, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(650, audioCtx.currentTime + 0.16);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.16);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.16);
+  } catch(e) {}
+}
+
+function playCoinSound() {
+  if (!soundEnabled) return;
+  try {
+    initAudio();
+    let now = audioCtx.currentTime;
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(987.77, now); 
+    osc.frequency.setValueAtTime(1318.51, now + 0.07); 
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(now + 0.25);
+  } catch(e) {}
+}
+
+const player = {
+  x: 70,
+  y: 0,
+  w: 45, 
+  h: 45,
+  dy: 0,
+  jumps: 0,
+  timeSinceOnGround: 0, 
+  hitboxOffsetX: 6,
+  hitboxOffsetY: 2,
+  hitboxW: 33, 
+  hitboxH: 41  
+};
+
+let obstacles = [];
+let spawnTimer = 0;
+
+function ground() {
+  return V_HEIGHT - 80;
+}
+
+function updateMusic() {
+  if (musicEnabled && state === "playing") {
+    if (bgMusic.paused) {
+      bgMusic.play().catch(e => console.log("Audio blocked"));
+    }
+  } else {
+    bgMusic.pause();
+  }
+}
+
+function jump() {
+  if (state !== "playing" || gameOverDelayTimer > 0) return;
+  
+  if (player.jumps === 0 && player.timeSinceOnGround < 8) {
+    player.dy = -11.8; 
+    player.jumps = 1;
+    playJumpSound();
+    triggerDustBurst(player.x + 15, player.y + player.h, 6, "#bbb");
+  } 
+  else if (player.jumps < 2) {
+    player.dy = -11.8;
+    player.jumps++;
+    playJumpSound();
+    triggerDustBurst(player.x + 15, player.y + player.h / 2, 8, "#3498db");
+  }
+}
+
+document.addEventListener("keydown", e => {
+  if (e.code === "Space" || e.code === "ArrowUp") {
+    initAudio();
+    jump();
+  }
+});
+
+window.addEventListener("pointerdown", e => {
+  initAudio();
+  if (e.target.tagName === "BUTTON") return;
+  jump();
+});
+
+document.getElementById("playMenuBtn").onclick = () => {
+  initAudio();
+  document.getElementById("menu").classList.add("hidden");
+  setTimeout(() => {
+    document.getElementById("modeMenu").classList.remove("hidden");
+  }, 150);
+};
+
+document.getElementById("backToMenuBtn").onclick = () => {
+  document.getElementById("modeMenu").classList.add("hidden");
+  setTimeout(() => {
+    document.getElementById("menu").classList.remove("hidden");
+  }, 150);
+};
+
+document.getElementById("normalBtn").onclick = () => { gameMode = "normal"; triggerIntro(); };
+document.getElementById("hardcoreBtn").onclick = () => { gameMode = "hardcore"; triggerIntro(); };
+
+document.getElementById("retryBtn").onclick = (e) => { 
+  e.stopPropagation(); 
+  document.getElementById("gameover").classList.add("hidden");
+  canvas.classList.remove("blur-filter");
+  startGame(); 
+};
+
+document.getElementById("resumeBtn").onclick = (e) => { 
+  e.stopPropagation(); 
+  document.getElementById("lifeOverlay").classList.add("hidden");
+  canvas.classList.remove("blur-filter");
+  resumeAfterLife(); 
+};
+
+document.getElementById("settingsBtn").onclick = () => {
+  document.getElementById("settingsMenu").classList.remove("hidden");
+};
+document.getElementById("closeSettingsBtn").onclick = () => {
+  document.getElementById("settingsMenu").classList.add("hidden");
+};
+
+document.getElementById("soundToggleBtn").onclick = () => {
+  soundEnabled = !soundEnabled;
+  document.getElementById("soundToggleBtn").innerText = soundEnabled ? "ON" : "OFF";
+};
+
+document.getElementById("musicToggleBtn").onclick = () => {
+  musicEnabled = !musicEnabled;
+  document.getElementById("musicToggleBtn").innerText = musicEnabled ? "ON" : "OFF";
+  updateMusic();
+};
+
+const pauseBtn = document.getElementById("pauseBtn");
+const pauseOverlay = document.getElementById("pauseOverlay");
+
+function togglePause() {
+  if (state === "playing") {
+    state = "paused";
+    updateMusic();
+    canvas.classList.add("blur-filter");
+    pauseOverlay.classList.remove("hidden");
+  } else if (state === "paused") {
+    state = "playing";
+    updateMusic();
+    canvas.classList.remove("blur-filter");
+    pauseOverlay.classList.add("hidden");
+    document.getElementById("settingsMenu").classList.add("hidden"); 
+  }
+}
+
+pauseBtn.onclick = togglePause;
+document.getElementById("resumePauseBtn").onclick = togglePause;
+
+document.getElementById("pauseSettingsBtn").onclick = () => {
+  document.getElementById("settingsMenu").classList.remove("hidden");
+};
+
+document.getElementById("quitBtn").onclick = () => { goToMenu(); };
+document.getElementById("quitFromGameOverBtn").onclick = () => { goToMenu(); };
+
+document.getElementById("donateBtn").onclick = () => {
+  const wallet = "0x726c79c2d9653fe0e4110e7c70a9f382bcdfb634";
+  navigator.clipboard.writeText(wallet).then(() => {
+    const toast = document.getElementById("toastNotification");
+    toast.style.opacity = "1";
+    setTimeout(() => {
+      toast.style.opacity = "0";
+    }, 2000);
+  });
+};
+
+document.getElementById("dialogBox").ondblclick = () => {
+  if (typeInterval) clearInterval(typeInterval);
+  document.getElementById("introOverlay").classList.add("hidden");
+  canvas.classList.remove("blur-filter");
+  setTimeout(() => {
+    startGame();
+  }, 300);
+};
+
+function goToMenu() {
+  state = "menu";
+  updateMusic();
+  canvas.classList.remove("blur-filter");
+  pauseOverlay.classList.add("hidden");
+  document.getElementById("gameover").classList.add("hidden");
+  document.getElementById("lifeOverlay").classList.add("hidden");
+  document.getElementById("modeMenu").classList.add("hidden");
+  document.getElementById("introOverlay").classList.add("hidden");
+  document.getElementById("settingsMenu").classList.add("hidden");
+  setTimeout(() => {
+    document.getElementById("menu").classList.remove("hidden");
+  }, 150);
+}
+
+function triggerIntro() {
+  document.getElementById("modeMenu").classList.add("hidden");
+  setTimeout(() => {
+    document.getElementById("introOverlay").classList.remove("hidden");
+  }, 150);
+  canvas.classList.add("blur-filter");
+  
+  const typedTextDiv = document.getElementById("typedText");
+  const readyBtn = document.getElementById("readyBtn");
+  
+  typedTextDiv.innerText = "";
+  readyBtn.classList.add("hidden");
+  textIndex = 0;
+  
+  if (typeInterval) clearInterval(typeInterval);
+  
+  typeInterval = setInterval(() => {
+    if (textIndex < introText.length) {
+      let char = introText.charAt(textIndex);
+      typedTextDiv.innerText += char;
+      textIndex++;
+      if(char !== " ") playBlipSound();
+    } else {
+      clearInterval(typeInterval);
+      readyBtn.classList.remove("hidden");
+    }
+  }, 50); 
+}
+
+document.getElementById("readyBtn").onclick = () => {
+  document.getElementById("introOverlay").classList.add("hidden");
+  canvas.classList.remove("blur-filter");
+  setTimeout(() => {
+    startGame();
+  }, 150);
+};
+
+function startGame() {
+  scoreRun = 0;
+  level = (gameMode === "hardcore") ? 6 : 1; 
+  lives = 3;
+  coins = 0;
+  gameTime = 0;
+  bgScrollX = 0;
+  floorScrollX = 0;
+  particles = [];
+  floatingTexts = [];
+  shakeTimer = 0;
+  gameOverDelayTimer = 0;
+  
+  // Condición de Zona Inicial Rectificada
+  currentZone = (level >= 5) ? 1 : 0;
+  floorTransitionAlpha = currentZone; 
+
+  resetRun();
+  state = "playing";
+  updateMusic();
+}
+
+function resetRun() {
+  player.y = ground() - player.h;
+  player.dy = 0;
+  player.jumps = 0;
+  player.timeSinceOnGround = 0;
+  obstacles = [];
+  spawnTimer = 0;
+  invincible = true;
+  invincibleTimer = 120; 
+}
+
+function resumeAfterLife() {
+  state = "playing";
+  updateMusic();
+  canvas.classList.remove("blur-filter");
+  resetRun();
+}
+
+function spawn() {
+  if (gameOverDelayTimer > 0) return;
+  const g = ground();
+  const r = Math.random();
+  const SIZE_34 = 34;
+
+  if (r < 0.35) {
+    let baseWidth = 126; 
+    let startOffsetX = V_WIDTH;
+    let totalTramos = Math.floor(Math.random() * 3) + 2; 
+    
+    let platY = Math.random() < 0.5 ? g - 78 : g - 145; 
+
+    for (let i = 0; i < totalTramos; i++) {
+      let currentX = startOffsetX + (i * (baseWidth - 5));
+
+      obstacles.push({
+        t:"plataforma", x: currentX, y: platY, w: baseWidth, h: 21, 
+        hx: 0, hy: 0, hw: baseWidth, hh: 13, speedMod: 1, isCollectible: false, isSolidTop: true
+      });
+
+      if (Math.random() < 0.35) {
+        obstacles.push({
+          t:"coin", x: currentX + 45, y: platY - 35, w: 25, h: 25,
+          hx: 2, hy: 2, hw: 21, hh: 21, speedMod: 1, isCollectible: true
+        });
+      }
+    }
+    
+    let fosoWidth = baseWidth * totalTramos;
+    obstacles.push({
+      t:"lava", x: startOffsetX, y: g, w: fosoWidth, h: 42, 
+      hx: 0, hy: 2, hw: fosoWidth, hh: 40, speedMod: 1, isCollectible: false, isLava: true
+    });
+  } 
+  else {
+    const selector = Math.random();
+
+    if (selector < 0.22) {
+      obstacles.push({
+        t:"floor_obs", x: V_WIDTH, y: g - SIZE_34, w: SIZE_34, h: SIZE_34, 
+        hx: 4, hy: 4, hw: 26, hh: 30, speedMod: 1, isCollectible: false
+      });
+    } 
+    else if (selector < 0.42) {
+      obstacles.push({
+        t:"hongo2", x: V_WIDTH, y: g - SIZE_34, w: SIZE_34, h: SIZE_34, 
+        hx: 4, hy: 4, hw: 26, hh: 30, speedMod: 1, isCollectible: false
+      });
+    }
+    else if (selector < 0.58) {
+      obstacles.push({
+        t:"tanques", x: V_WIDTH, y: g - SIZE_34, w: SIZE_34, h: SIZE_34, 
+        hx: 2, hy: 2, hw: 30, hh: 32, speedMod: 1, isCollectible: false
+      });
+    }
+    else if (selector < 0.74) {
+      obstacles.push({
+        t:"monketurtle", x: V_WIDTH, y: g - SIZE_34, w: 38, h: SIZE_34, 
+        hx: 3, hy: 3, hw: 32, hh: 31, speedMod: 1.05, isCollectible: false
+      });
+    }
+    else if (selector < 0.88) {
+      let cantidadFuegos = Math.floor(Math.random() * 3) + 1; 
+      for(let f = 0; f < cantidadFuegos; f++) {
+        obstacles.push({
+          t:"fuego", x: V_WIDTH + (f * 27), y: g - 40, w: 31, h: 40, 
+          hx: 4, hy: 6, hw: 23, hh: 34, speedMod: 1, isCollectible: false
+        });
+      }
+    }
+    else {
+      let randY = g - (85 + Math.floor(Math.random() * 25));
+      let speedDanger = 1.20 + (level * 0.03);
+      obstacles.push({
+        t:"danger", x: V_WIDTH, y: randY, w: 63, h: 31, 
+        hx: 4, hy: 4, hw: 55, hh: 23, speedMod: speedDanger, isCollectible: false
+      });
+    }
+  }
+}
+
+function triggerScreenShake(duration, intensity) {
+  shakeTimer = duration;
+  shakeIntensity = intensity;
+}
+
+function addFloatingText(x, y, str, color = "white") {
+  floatingTexts.push({
+    x: x, y: y, text: str, color: color, alpha: 1, vy: -1.5
+  });
+}
+
+function createDust(x, y) {
+  particles.push({
+    x: x, y: y, vx: -2 - Math.random() * 2, vy: -Math.random() * 1,
+    alpha: 1, size: 2 + Math.random() * 3, color: "rgba(230, 230, 250,"
+  });
+}
+
+function triggerDustBurst(x, y, count, baseColor = "rgba(255,255,255,") {
+  for(let i=0; i<count; i++){
+    particles.push({
+      x: x, y: y, vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.7) * 4,
+      alpha: 1, size: 2 + Math.random() * 3, 
+      color: baseColor.startsWith("rgba") ? baseColor : `rgba(${baseColor === '#3498db' ? '52,152,219' : '200,200,200'},`
+    });
+  }
+}
+
+function triggerLevelUpBurst() {
+  for(let i=0; i<30; i++){
+    particles.push({
+      x: player.x + 22, y: player.y + 10, 
+      vx: (Math.random() - 0.5) * 12, vy: (Math.random() - 0.6) * 12,
+      alpha: 1, size: 3 + Math.random() * 4, color: "rgba(241, 196, 15,"
+    });
+  }
+}
+
+function update() {
+  if (state !== "playing") return;
+
+  if (gameOverDelayTimer > 0) {
+    gameOverDelayTimer--;
+    if(gameOverDelayTimer <= 0) triggerRealGameOver();
+    if (gameTime % 3 !== 0) return; 
+  }
+
+  gameTime++;
+  const g = ground();
+
+  if (invincible && invincibleTimer > 0) {
+    invincibleTimer--;
+    if (invincibleTimer <= 0) invincible = false;
+  }
+
+  const baseSpeedByMode = (gameMode === "hardcore") ? 9.5 : 4.5;
+  const speed = baseSpeedByMode + (level * 0.35);
+  const rate = Math.max(75 - (level * 4), 26);
+
+  bgScrollX -= (speed * 0.20);
+  floorScrollX -= speed; 
+
+  player.dy += 0.72; 
+  player.y += player.dy;
+
+  let currentGround = g - player.h;
+  let standingOnPlatform = false;
+  let overLava = false;
+
+  // RECTIFICACIÓN DEL CAMBIO DE ZONA: Cada 5 niveles exactos (1-5 es Normal, 5-10 es Bosque, 10-15 Normal...)
+  let targetZone = (Math.floor((level) / 5) % 2 === 1) ? 1 : 0;
+  if (currentZone !== targetZone) {
+    currentZone = targetZone;
+  }
+
+  // Variación del alfa con suavidad matemática (Acoplamiento de transición en 1.2s)
+  if (currentZone === 1 && floorTransitionAlpha < 1) {
+    floorTransitionAlpha = Math.min(1, floorTransitionAlpha + 0.015);
+  } else if (currentZone === 0 && floorTransitionAlpha > 0) {
+    floorTransitionAlpha = Math.max(0, floorTransitionAlpha - 0.015);
+  }
+
+  spawnTimer++;
+  if (spawnTimer > rate) {
+    spawnTimer = 0;
+    spawn();
+  }
+
+  if (gameTime % 50 === 0) { 
+    let coinAlt = g - (35 + Math.floor(Math.random() * 130));
+    obstacles.push({
+      t:"coin", x: V_WIDTH, y: coinAlt, w: 25, h: 25,
+      hx: 2, hy: 2, hw: 21, hh: 21, speedMod: 1, isCollectible: true
+    });
+  }
+
+  if (gameTime % 500 === 0) {
+    let spawnAlt = g - 110;
+    if (Math.random() < 0.40) { 
+      obstacles.push({
+        t:"queso", x: V_WIDTH, y: spawnAlt, w: 34, h: 34, 
+        hx: 2, hy: 2, hw: 30, hh: 30, speedMod: 1, isCollectible: true
+      });
+    } else if (Math.random() < 0.25) {
+      obstacles.push({
+        t:"corazon_item", x: V_WIDTH, y: spawnAlt - 20, w: 34, h: 34, 
+        hx: 2, hy: 2, hw: 30, hh: 30, speedMod: 1, isCollectible: true
+      });
+    }
+  }
+
+  const pAABB = {
+    x: player.x + player.hitboxOffsetX,
+    y: player.y + player.hitboxOffsetY,
+    w: player.hitboxW,
+    h: player.hitboxH
+  };
+
+  // RECTIFICACIÓN DE PLATAFORMAS: Verificación estricta de caída vertical
+  for (let o of obstacles) {
+    if (o.isSolidTop) {
+      let oX = o.x;
+      const playerBottom = player.y + player.h;
+      
+      const overlapsX = pAABB.x < oX + o.w - 4 && pAABB.x + pAABB.w > oX + 4;
+      
+      // Captura segura del personaje al caer, sin importar la velocidad del juego
+      if (overlapsX && playerBottom >= o.y && (playerBottom - player.dy) <= o.y + 18 && player.dy >= 0) {
+        currentGround = o.y - player.h;
+        standingOnPlatform = true;
+      }
+    }
+  }
+
+  for (let o of obstacles) {
+    o.x -= (speed * o.speedMod);
+    if (o.x < -600 || o.x > V_WIDTH + 200) continue;
+
+    const oAABB = {
+      x: o.x + o.hx,
+      y: o.y + o.hy,
+      w: o.hw,
+      h: o.hh
+    };
+
+    const overlapsX = pAABB.x < oAABB.x + oAABB.w && pAABB.x + pAABB.w > oAABB.x;
+    const overlapsY = pAABB.y < oAABB.y + oAABB.h && pAABB.y + pAABB.h > oAABB.y;
+    const hit = overlapsX && overlapsY;
+
+    if (o.isLava && overlapsX && !standingOnPlatform) {
+      overLava = true;
+    }
+
+    if (hit) { 
+      if (o.isCollectible) {
+        if (o.t === "corazon_item") {
+          if (lives < MAX_LIVES) {
+            lives++;
+            addFloatingText(o.x, o.y, "+1 LIFE!", "#2ecc71");
+          } else {
+            scoreRun += 500;
+          }
+          triggerDustBurst(o.x+16, o.y+16, 8, "rgba(46,204,113,");
+        } 
+        else if (o.t === "coin") {
+          coins++;
+          playCoinSound(); 
+          addFloatingText(o.x, o.y, "+1", "#f1c40f");
+          triggerDustBurst(o.x+12, o.y+12, 4, "rgba(241,196,15,");
+          
+          if (coins >= 20) {
+            coins = 0;
+            if (lives < MAX_LIVES) {
+              lives++;
+              addFloatingText(player.x, player.y - 40, "EXTRA LIFE!", "#2ecc71");
+            } else {
+              scoreRun += 1000;
+            }
+          }
+        } 
+        else if (o.t === "queso") {
+          level++;
+          triggerLevelUpBurst();
+          addFloatingText(player.x, player.y - 45, "LEVEL UP! ✨", "#f1c40f");
+          scoreRun += 400;
+        }
+        o.dead = true;
+      } else {
+        if (o.isSolidTop) continue; 
+        if (invincible || invincibleTimer > 0) {
+          if (!o.isLava) {
+            o.dead = true;
+            triggerDustBurst(o.x + 15, o.y + 15, 6, "#ff3333");
+          }
+          continue; 
+        }
+
+        triggerScreenShake(15, 8); 
+        if (o.isLava) {
+          lives = 0;
+          loseLife();
+          return;
+        } else {
+          lives--;
+          addFloatingText(player.x, player.y - 20, "OUCH!", "#e74c3c");
+          loseLife();
+          break;
+        }
+      }
+    }
+  }
+
+  obstacles = obstacles.filter(o => !o.dead && o.x > -600);
+
+  if (overLava) {
+    if (!invincible && invincibleTimer <= 0) {
+      currentGround = V_HEIGHT + 200; 
+    }
+  }
+
+  if (player.y >= currentGround) {
+    player.y = currentGround;
+    player.dy = 0;
+    player.jumps = 0;
+    player.timeSinceOnGround = 0;
+    
+    if (gameTime % 5 === 0 && currentGround < V_HEIGHT) {
+      createDust(player.x + 10, player.y + player.h);
+    }
+
+    if (overLava && !invincible && invincibleTimer <= 0) {
+      lives = 0;
+      triggerScreenShake(30, 12);
+      loseLife();
+      return;
+    }
+  } else {
+    player.timeSinceOnGround++; 
+  }
+
+  if (player.y > V_HEIGHT) {
+    lives = 0;
+    loseLife();
+    return;
+  }
+
+  for (let p of particles) { p.x += p.vx; p.y += p.vy; p.alpha -= 0.035; }
+  particles = particles.filter(p => p.alpha > 0);
+
+  for (let t of floatingTexts) { t.y += t.vy; t.alpha -= 0.025; }
+  floatingTexts = floatingTexts.filter(t => t.alpha > 0);
+
+  scoreRun += 1;
+  
+  if (gameMode === "normal" && scoreRun % 1800 === 0) {
+    level++;
+    triggerLevelUpBurst();
+    addFloatingText(player.x, player.y - 45, "LEVEL UP!", "#2ecc71");
+  }
+
+  tick++;
+  if (tick > 5) {
+    tick = 0;
+    frame = (frame + 1) % 3;
+  }
+}
+
+function draw() {
+  ctx.save();
+  if (shakeTimer > 0) {
+    let dx = (Math.random() - 0.5) * shakeIntensity;
+    let dy = (Math.random() - 0.5) * shakeIntensity;
+    ctx.translate(dx, dy);
+    shakeTimer--;
+  }
+
+  ctx.clearRect(0, 0, V_WIDTH, V_HEIGHT);
+
+  if (bgImg.complete) {
+    let bgW = 64; let bgH = 32;
+    let scaleFactor = (V_HEIGHT - 80) / bgH;
+    let finalW = bgW * scaleFactor;
+    let startX = bgScrollX % finalW; 
+    for (let x = startX - finalW; x < V_WIDTH + finalW; x += finalW) {
+      ctx.drawImage(bgImg, x, 0, finalW, V_HEIGHT - 80); 
+    }
+  }
+  
+  // Fondo base oscuro
+  ctx.fillStyle = "rgba(10, 10, 26, 0.65)";
+  ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT - 80);
+
+  // Fondo azul degradado (Se dibuja encima modulado por el Alpha)
+  if (floorTransitionAlpha > 0) {
+    ctx.save();
+    ctx.globalAlpha = floorTransitionAlpha;
+    let gradient = ctx.createLinearGradient(0, 0, 0, V_HEIGHT - 80);
+    gradient.addColorStop(0, "rgba(52, 152, 219, 0.55)"); 
+    gradient.addColorStop(1, "rgba(0, 0, 0, 0.85)");       
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT - 80);
+    ctx.restore();
+  }
+
+  const g = ground();
+
+  let floorW = 64; let floorH = 32;
+  let startFX = floorScrollX % floorW;
+
+  // Dibujado del Suelo 1: Normal (Desvanece si sube floorTransitionAlpha)
+  if (floorTransitionAlpha < 1 && floorImg.complete) {
+    ctx.save();
+    ctx.globalAlpha = 1 - floorTransitionAlpha;
+    for (let x = startFX - floorW; x < V_WIDTH + floorW; x += floorW) {
+      ctx.drawImage(floorImg, x, g, floorW, floorH);
+      ctx.drawImage(floorImg, x, g + 32, floorW, floorH); 
+    }
+    ctx.restore();
+  }
+
+  // Dibujado del Suelo 2: Bosque (Aparece gradualmente)
+  if (floorTransitionAlpha > 0 && floorForestImg.complete) {
+    ctx.save();
+    ctx.globalAlpha = floorTransitionAlpha;
+    for (let x = startFX - floorW; x < V_WIDTH + floorW; x += floorW) {
+      ctx.drawImage(floorForestImg, x, g, floorW, floorH);
+      ctx.drawImage(floorForestImg, x, g + 32, floorW, floorH); 
+    }
+    ctx.restore();
+  }
+
+  for (let o of obstacles) {
+    if (o.t === "floor_obs") {
+      ctx.drawImage(floorObstacleImg, 0, 0, 32, 32, o.x, o.y, o.w, o.h);
+    } else if (o.t === "hongo2") {
+      ctx.drawImage(hongo2Img, 0, 0, 32, 32, o.x, o.y, o.w, o.h);
+    } else if (o.t === "tanques") {
+      ctx.drawImage(tanquesImg, 0, 0, 32, 32, o.x, o.y, o.w, o.h);
+    } else if (o.t === "monketurtle") {
+      let tFrame = Math.floor(gameTime / 12) % 2;
+      ctx.drawImage(monketurtleImg, tFrame * 32, 0, 32, 32, o.x, o.y, o.w, o.h);
+    } else if (o.t === "fuego") {
+      let fFrame = Math.floor(gameTime / 8) % 3;
+      ctx.drawImage(fuegoImg, fFrame * 32, 0, 32, 32, o.x, o.y, o.w, o.h);
+    } else if (o.t === "coin") {
+      let cFrame = Math.floor(gameTime / 9) % 3;
+      ctx.drawImage(coinImg, cFrame * 32, 0, 32, 32, o.x, o.y, o.w, o.h);
+    } else if (o.t === "danger") {
+      ctx.drawImage(dangerImg, o.x, o.y, o.w, o.h);
+    } else if (o.t === "plataforma") {
+      ctx.drawImage(plataformaImg, o.x, o.y, o.w, o.h);
+    } else if (o.t === "lava") {
+      ctx.drawImage(lavaImg, o.x, o.y, o.w, o.h);
+    } else if (o.t === "queso") {
+      ctx.drawImage(quesoImg, o.x, o.y, o.w, o.h);
+    } else if (o.t === "corazon_item") {
+      ctx.drawImage(heartImg, o.x, o.y, o.w, o.h);
+    }
+  }
+
+  for (let p of particles) {
+    ctx.fillStyle = `${p.color} ${p.alpha})`;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  }
+
+  let isCurrentlyInvincible = invincible || invincibleTimer > 0;
+  if (!isCurrentlyInvincible || Math.floor(gameTime / 6) % 2 === 0) {
+    ctx.save();
+    if (isCurrentlyInvincible) ctx.globalAlpha = 0.6; 
+    if (playerImg.complete) {
+      ctx.drawImage(playerImg, frame * 32, 0, 32, 32, player.x, player.y, player.w, player.h);
+    }
+    ctx.restore();
+  }
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "11px 'Press Start 2P'";
+  ctx.shadowColor = "#000";
+  ctx.shadowBlur = 4;
+  ctx.fillText("SCORE " + scoreRun, 15, 25);
+  
+  ctx.fillStyle = "#3498db";
+  ctx.fillText("LEVEL " + level, 15, 45);
+  ctx.shadowBlur = 0;
+
+  const sizeHeart = 20;
+  const gapHeart = 6;
+  for (let i = 0; i < MAX_LIVES; i++) {
+    let currentImg = (i < lives) ? heartImg : heartEmptyImg;
+    if (currentImg.complete) {
+      ctx.drawImage(currentImg, 15 + (i * (sizeHeart + gapHeart)), 60, sizeHeart, sizeHeart);
+    }
+  }
+
+  let coinHUDFrame = Math.floor(gameTime / 10) % 3;
+  if (coinImg.complete) {
+    ctx.drawImage(coinImg, coinHUDFrame * 32, 0, 32, 32, 15, 90, 22, 22);
+  }
+  ctx.fillStyle = "#f1c40f";
+  ctx.fillText(`${coins}/20`, 45, 107);
+
+  ctx.font = "10px 'Press Start 2P'";
+  for (let t of floatingTexts) {
+    ctx.fillStyle = t.color; ctx.globalAlpha = t.alpha;
+    ctx.fillText(t.text, t.x, t.y);
+  }
+  ctx.globalAlpha = 1.0; 
+  ctx.restore(); 
+}
+
+function loop(timestamp) {
+  requestAnimationFrame(loop);
+  const elapsed = timestamp - lastTime;
+  if (elapsed > fpsInterval) {
+    lastTime = timestamp - (elapsed % fpsInterval);
+    update();
+    draw();
+  }
+}
+requestAnimationFrame(loop);
+
+function loseLife() {
+  if (lives <= 0) {
+    gameOverDelayTimer = 45; 
+  } else {
+    state = "paused";
+    updateMusic();
+    canvas.classList.add("blur-filter");
+    document.getElementById("lifeText").innerText = `You have ${lives} lives left`;
+    document.getElementById("lifeOverlay").classList.remove("hidden");
+  }
+}
+
+function triggerRealGameOver() {
+  state = "gameover";
+  updateMusic();
+  canvas.classList.add("blur-filter");
+
+  if (scoreRun > highScore) {
+    highScore = scoreRun;
+    localStorage.setItem("rat_dash_highscore", highScore);
+  }
+
+  document.getElementById("finalScore").innerText = `SCORE: ${scoreRun}`;
+  document.getElementById("bestScore").innerText = `BEST: ${highScore}`;
+  document.getElementById("gameover").classList.remove("hidden");
+  setupShare();
+}
+
+function setupShare() {
+  const btn = document.getElementById("shareX");
+  btn.onclick = () => {
+    const text = encodeURIComponent(`I scored ${scoreRun} points in Rat Dash Chaos! 🐀🎮 #RetroGaming`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
+  };
+}
+</script>
+</body>
+</html>
