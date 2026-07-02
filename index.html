@@ -46,7 +46,7 @@ canvas.blur-filter {
   transition: opacity 0.3s ease-in-out;
 }
 #menu{
-  background:url("assets/inicialscreen.png") center/cover no-repeat;
+  background:url("inicialscreen.png") center/cover no-repeat;
 }
 #menu::before, #settingsMenu::before, #pauseOverlay::before, #gameover::before, #modeMenu::before, #introOverlay::before{
   content:"";
@@ -118,6 +118,22 @@ button:active {
   box-shadow: 0 3px #000;
 }
 #pauseBtn:active{ transform: translateY(2px); box-shadow:0 1px #000; }
+
+#fullscreenBtn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  padding: 10px 14px;
+  font-size: 9px;
+  background-color: #34495e;
+  border: 3px solid #2c3e50;
+  box-shadow: 0 3px #000;
+  margin: 0;
+}
+#fullscreenBtn:hover { background-color: #45627e; }
+#fullscreenBtn:active { transform: translateY(2px); box-shadow: 0 1px #000; }
+
 #lifeOverlay{
   background:rgba(5, 5, 10, 0.85);
   z-index:50;
@@ -221,11 +237,12 @@ button:active {
 </head>
 <body>
 
+<button id="fullscreenBtn">📺 FULLSCREEN</button>
+<button id="pauseBtn">⏸</button>
+
 <div id="gameContainer">
   <canvas id="game"></canvas>
 </div>
-
-<button id="pauseBtn">⏸</button>
 
 <div id="toastNotification">WALLET COPIED! ✨</div>
 
@@ -250,7 +267,7 @@ button:active {
 
 <div id="introOverlay" class="ui hidden">
   <div class="dialog-box" id="dialogBox" title="Double click to skip">
-    <img src="assets/GiNinja.png" alt="GiNinja" class="ninja-avatar">
+    <img src="GiNinja.png" alt="GiNinja" class="ninja-avatar">
     <div id="typedText" class="dialog-text"></div>
   </div>
   <button id="readyBtn" class="hidden">READY</button>
@@ -317,28 +334,31 @@ const fpsInterval = 1000 / 60;
 let state = "menu";
 let gameMode = "normal"; 
 
+// Si mantuviste la música dentro de la carpeta assets, deja esto igual. 
+// Si la música también quedó suelta fuera junto a los PNG, cámbialo a "ogratmusic.mp3"
 const bgMusic = new Audio("assets/ogratmusic.mp3");
 bgMusic.loop = true;
 
-const playerImg = new Image(); playerImg.src = "assets/rat_run.png";
-const floorObstacleImg = new Image(); floorObstacleImg.src = "assets/hongo.png"; 
-const dangerImg = new Image(); dangerImg.src = "assets/danger1.png";
-const bgImg = new Image(); bgImg.src = "assets/gameplaybackground1.png";
+// RUTAS CORREGIDAS (SIN ASSETS/)
+const playerImg = new Image(); playerImg.src = "rat_run.png";
+const floorObstacleImg = new Image(); floorObstacleImg.src = "hongo.png"; 
+const dangerImg = new Image(); dangerImg.src = "danger1.png";
+const bgImg = new Image(); bgImg.src = "gameplaybackground1.png";
 
-const floorImg = new Image(); floorImg.src = "assets/floor.png";
-const floorForestImg = new Image(); floorForestImg.src = "assets/floorforest.png";
+const floorImg = new Image(); floorImg.src = "floor.png";
+const floorForestImg = new Image(); floorForestImg.src = "floorforest.png";
 
-const heartImg = new Image(); heartImg.src = "assets/heart.png";
-const heartEmptyImg = new Image(); heartEmptyImg.src = "assets/heart_empty.png";
-const quesoImg = new Image(); quesoImg.src = "assets/queso.png";
-const plataformaImg = new Image(); plataformaImg.src = "assets/plataforma.png";
-const lavaImg = new Image(); lavaImg.src = "assets/lava.png";
+const heartImg = new Image(); heartImg.src = "heart.png";
+const heartEmptyImg = new Image(); heartEmptyImg.src = "heart_empty.png";
+const quesoImg = new Image(); quesoImg.src = "queso.png";
+const plataformaImg = new Image(); plataformaImg.src = "plataforma.png";
+const lavaImg = new Image(); lavaImg.src = "lava.png";
 
-const hongo2Img = new Image(); hongo2Img.src = "assets/hongo2.png";
-const tanquesImg = new Image(); tanquesImg.src = "assets/tanques.png";
-const monketurtleImg = new Image(); monketurtleImg.src = "assets/monketurtle.png"; 
-const fuegoImg = new Image(); fuegoImg.src = "assets/fuego.png"; 
-const coinImg = new Image(); coinImg.src = "assets/coin.png"; 
+const hongo2Img = new Image(); hongo2Img.src = "hongo2.png";
+const tanquesImg = new Image(); tanquesImg.src = "tanques.png";
+const monketurtleImg = new Image(); monketurtleImg.src = "monketurtle.png"; 
+const fuegoImg = new Image(); fuegoImg.src = "fuego.png"; 
+const coinImg = new Image(); coinImg.src = "coin.png"; 
 
 let scoreRun = 0;
 let level = 1;
@@ -356,7 +376,6 @@ let gameTime = 0;
 let bgScrollX = 0;
 let floorScrollX = 0; 
 
-// Sistema de transiciones de entorno corregido
 let currentZone = 0; 
 let floorTransitionAlpha = 0; 
 
@@ -658,7 +677,6 @@ function startGame() {
   shakeTimer = 0;
   gameOverDelayTimer = 0;
   
-  // Condición de Zona Inicial Rectificada
   currentZone = (level >= 5) ? 1 : 0;
   floorTransitionAlpha = currentZone; 
 
@@ -836,13 +854,11 @@ function update() {
   let standingOnPlatform = false;
   let overLava = false;
 
-  // RECTIFICACIÓN DEL CAMBIO DE ZONA: Cada 5 niveles exactos (1-5 es Normal, 5-10 es Bosque, 10-15 Normal...)
   let targetZone = (Math.floor((level) / 5) % 2 === 1) ? 1 : 0;
   if (currentZone !== targetZone) {
     currentZone = targetZone;
   }
 
-  // Variación del alfa con suavidad matemática (Acoplamiento de transición en 1.2s)
   if (currentZone === 1 && floorTransitionAlpha < 1) {
     floorTransitionAlpha = Math.min(1, floorTransitionAlpha + 0.015);
   } else if (currentZone === 0 && floorTransitionAlpha > 0) {
@@ -885,7 +901,6 @@ function update() {
     h: player.hitboxH
   };
 
-  // RECTIFICACIÓN DE PLATAFORMAS: Verificación estricta de caída vertical
   for (let o of obstacles) {
     if (o.isSolidTop) {
       let oX = o.x;
@@ -893,7 +908,6 @@ function update() {
       
       const overlapsX = pAABB.x < oX + o.w - 4 && pAABB.x + pAABB.w > oX + 4;
       
-      // Captura segura del personaje al caer, sin importar la velocidad del juego
       if (overlapsX && playerBottom >= o.y && (playerBottom - player.dy) <= o.y + 18 && player.dy >= 0) {
         currentGround = o.y - player.h;
         standingOnPlatform = true;
@@ -1055,11 +1069,9 @@ function draw() {
     }
   }
   
-  // Fondo base oscuro
   ctx.fillStyle = "rgba(10, 10, 26, 0.65)";
   ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT - 80);
 
-  // Fondo azul degradado (Se dibuja encima modulado por el Alpha)
   if (floorTransitionAlpha > 0) {
     ctx.save();
     ctx.globalAlpha = floorTransitionAlpha;
@@ -1076,7 +1088,6 @@ function draw() {
   let floorW = 64; let floorH = 32;
   let startFX = floorScrollX % floorW;
 
-  // Dibujado del Suelo 1: Normal (Desvanece si sube floorTransitionAlpha)
   if (floorTransitionAlpha < 1 && floorImg.complete) {
     ctx.save();
     ctx.globalAlpha = 1 - floorTransitionAlpha;
@@ -1087,7 +1098,6 @@ function draw() {
     ctx.restore();
   }
 
-  // Dibujado del Suelo 2: Bosque (Aparece gradualmente)
   if (floorTransitionAlpha > 0 && floorForestImg.complete) {
     ctx.save();
     ctx.globalAlpha = floorTransitionAlpha;
@@ -1223,6 +1233,22 @@ function setupShare() {
     window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
   };
 }
+
+document.getElementById("fullscreenBtn").onclick = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().then(() => {
+      setTimeout(resize, 100); 
+    }).catch(err => {
+      console.log(`Error al activar Fullscreen: ${err.message}`);
+    });
+  } else {
+    document.exitFullscreen().then(() => {
+      setTimeout(resize, 100); 
+    });
+  }
+};
+
+document.addEventListener("fullscreenchange", resize);
 </script>
 </body>
 </html>
