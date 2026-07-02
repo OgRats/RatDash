@@ -104,11 +104,13 @@ button:active {
   opacity: 0 !important;
   pointer-events: none !important; 
 }
+
+/* BOTONES DE LA ESQUINA SUPERIOR DERECHA */
 #pauseBtn{
   position:fixed;
   top:12px;
   right:12px;
-  z-index:20;
+  z-index:100;
   background: #222;
   border: 3px solid #444;
   padding: 10px 14px;
@@ -122,7 +124,7 @@ button:active {
 #fullscreenBtn {
   position: fixed;
   top: 12px;
-  left: 12px;
+  right: 64px; /* Colocado justo al lado del botón de pausa */
   z-index: 100;
   padding: 10px 14px;
   font-size: 9px;
@@ -254,7 +256,7 @@ button:active {
   <div class="social-container">
     <button class="x-btn" onclick="window.open('https://x.com/OgRats_', '_blank')">X: OG RATS 🐀</button>
     <button class="x-btn" onclick="window.open('https://x.com/NinjaRoninN', '_blank')">X: NINJA RONIN ⚔️</button>
-    <button class="donate-btn" id="donateBtn">☕ SUPPORT</button>
+    <button class="donate-btn" id="donateBtn">☕ DONATE</button>
   </div>
 </div>
 
@@ -334,12 +336,10 @@ const fpsInterval = 1000 / 60;
 let state = "menu";
 let gameMode = "normal"; 
 
-// Si mantuviste la música dentro de la carpeta assets, deja esto igual. 
-// Si la música también quedó suelta fuera junto a los PNG, cámbialo a "ogratmusic.mp3"
 const bgMusic = new Audio("assets/ogratmusic.mp3");
 bgMusic.loop = true;
 
-// RUTAS CORREGIDAS (SIN ASSETS/)
+// RUTAS DESDE LA RAÍZ (SIN ASSETS/)
 const playerImg = new Image(); playerImg.src = "rat_run.png";
 const floorObstacleImg = new Image(); floorObstacleImg.src = "hongo.png"; 
 const dangerImg = new Image(); dangerImg.src = "danger1.png";
@@ -1229,7 +1229,7 @@ function triggerRealGameOver() {
 function setupShare() {
   const btn = document.getElementById("shareX");
   btn.onclick = () => {
-    const text = encodeURIComponent(`I scored ${scoreRun} points in Rat Dash Chaos! 🐀🎮 #RetroGaming`);
+    const text = encodeURIComponent(`I scored ${scoreRun} points in Rat Dash Chaos! https://ograts.github.io/RatDash/ 🐀🎮 #RetroGaming`);
     window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
   };
 }
