@@ -90,7 +90,14 @@ button:active {
 #settingsBtn {
   background-color: #444;
   border-color: #2b2b2b;
-  margin-bottom: 40px; 
+}
+#marketplaceBtn {
+  background-color: #9b59b6;
+  border-color: #8e44ad;
+  margin-bottom: 40px;
+}
+#marketplaceBtn:hover {
+  background-color: #af7ac5;
 }
 .secondary-btn {
   background-color: #444;
@@ -123,8 +130,8 @@ button:active {
 
 #fullscreenBtn {
   position: fixed;
-  top: 23px;
-  right: 64px; /* Colocado justo al lado del botón de pausa */
+  top: 12px;
+  right: 64px; 
   z-index: 100;
   padding: 10px 14px;
   font-size: 9px;
@@ -149,11 +156,16 @@ button:active {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 300px;
+  width: 320px;
 }
 .setting-row button {
   padding: 8px 16px;
   margin: 0;
+}
+.volume-slider {
+  width: 120px;
+  accent-color: #e67e22;
+  cursor: pointer;
 }
 
 .social-container {
@@ -239,7 +251,7 @@ button:active {
 </head>
 <body>
 
-<button id="fullscreenBtn">🔳 FULLSCREEN</button>
+<button id="fullscreenBtn">📺 FULLSCREEN</button>
 <button id="pauseBtn">⏸</button>
 
 <div id="gameContainer">
@@ -249,14 +261,15 @@ button:active {
 <div id="toastNotification">WALLET COPIED! ✨</div>
 
 <div id="menu" class="ui">
-  <h1>RAT DASH CHAOS</h1>
+  <h1>🐀 RAT DASH CHAOS</h1>
   <button id="playMenuBtn">PLAY</button>
   <button id="settingsBtn">SETTINGS</button>
+  <button id="marketplaceBtn" onclick="window.open('https://marketplace.roninchain.com/collections/ograts', '_blank')">🛒 GET YOUR RAT</button>
   
   <div class="social-container">
     <button class="x-btn" onclick="window.open('https://x.com/OgRats_', '_blank')">X: OG RATS 🐀</button>
     <button class="x-btn" onclick="window.open('https://x.com/NinjaRoninN', '_blank')">X: NINJA RONIN ⚔️</button>
-    <button class="donate-btn" id="donateBtn">☕ SUPPORT</button>
+    <button class="donate-btn" id="donateBtn">☕ DONATE</button>
   </div>
 </div>
 
@@ -284,6 +297,10 @@ button:active {
   <div class="setting-row">
     <span>MUSIC:</span>
     <button id="musicToggleBtn">ON</button>
+  </div>
+  <div class="setting-row">
+    <span>VOLUME:</span>
+    <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.05" value="0.25">
   </div>
   <button id="closeSettingsBtn" class="secondary-btn">BACK</button>
 </div>
@@ -336,10 +353,67 @@ const fpsInterval = 1000 / 60;
 let state = "menu";
 let gameMode = "normal"; 
 
+// AUDIO (Ruta corregida)
 const bgMusic = new Audio("ogratmusic.mp3");
 bgMusic.loop = true;
+let targetVolume = 0.25; 
+let currentMusicVolume = 0.25;
+let musicEnabled = true;
+bgMusic.volume = currentMusicVolume;
 
-// RUTAS DESDE LA RAÍZ (SIN ASSETS/)
+let fadeInterval = null;
+
+function updateMusicState(shouldPlay) {
+  if (!musicEnabled) {
+    fadeMusicOut();
+    return;
+  }
+  if (shouldPlay) {
+    if (bgMusic.paused) {
+      bgMusic.play().catch(e => console.log("Esperando clic para reproducir audio."));
+    }
+    fadeMusicIn();
+  } else {
+    fadeMusicOut();
+  }
+}
+
+function fadeMusicIn() {
+  clearInterval(fadeInterval);
+  fadeInterval = setInterval(() => {
+    if (currentMusicVolume < targetVolume) {
+      currentMusicVolume = Math.min(targetVolume, currentMusicVolume + 0.02);
+      bgMusic.volume = currentMusicVolume;
+    } else {
+      clearInterval(fadeInterval);
+    }
+  }, 30);
+}
+
+function fadeMusicOut() {
+  clearInterval(fadeInterval);
+  fadeInterval = setInterval(() => {
+    if (currentMusicVolume > 0) {
+      currentMusicVolume = Math.max(0, currentMusicVolume - 0.02);
+      bgMusic.volume = currentMusicVolume;
+    } else {
+      bgMusic.pause();
+      clearInterval(fadeInterval);
+    }
+  }, 30);
+}
+
+function transitionScreen(action) {
+  fadeMusicOut();
+  setTimeout(() => {
+    action();
+    if(state === "playing" || state === "menu" || state === "gameover" || state === "mode_selection" || state === "intro") {
+      updateMusicState(true);
+    }
+  }, 300);
+}
+
+// IMÁGENES RECURSOS (Rutas corregidas sin assets/)
 const playerImg = new Image(); playerImg.src = "rat_run.png";
 const floorObstacleImg = new Image(); floorObstacleImg.src = "hongo.png"; 
 const dangerImg = new Image(); dangerImg.src = "danger1.png";
@@ -368,7 +442,6 @@ let coins = 0;
 
 let highScore = localStorage.getItem("rat_dash_highscore") || 0;
 let soundEnabled = true;
-let musicEnabled = true;
 
 let frame = 0;
 let tick = 0;
@@ -388,7 +461,7 @@ let shakeTimer = 0;
 let shakeIntensity = 0;
 let gameOverDelayTimer = 0; 
 
-let introText = "Let's see how far you can make it in the Rat Race. Survive the chaos!";
+let introText = "Let's see how far you can make it in the rat race... Don't get caught by the lava chaos!";
 let textIndex = 0;
 let typeInterval = null;
 
@@ -396,6 +469,11 @@ let audioCtx = null;
 function initAudio() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (musicEnabled && bgMusic.paused) {
+    bgMusic.play().then(() => {
+      fadeMusicIn();
+    }).catch(() => {});
   }
 }
 
@@ -453,6 +531,7 @@ function playCoinSound() {
   } catch(e) {}
 }
 
+// JUGADOR
 const player = {
   x: 70,
   y: 0,
@@ -472,16 +551,6 @@ let spawnTimer = 0;
 
 function ground() {
   return V_HEIGHT - 80;
-}
-
-function updateMusic() {
-  if (musicEnabled && state === "playing") {
-    if (bgMusic.paused) {
-      bgMusic.play().catch(e => console.log("Audio blocked"));
-    }
-  } else {
-    bgMusic.pause();
-  }
 }
 
 function jump() {
@@ -510,48 +579,84 @@ document.addEventListener("keydown", e => {
 
 window.addEventListener("pointerdown", e => {
   initAudio();
-  if (e.target.tagName === "BUTTON") return;
+  if (e.target.tagName === "BUTTON" || e.target.tagName === "INPUT") return;
   jump();
 });
 
+// INTERFAZ Y FLUJOS CORREGIDOS
 document.getElementById("playMenuBtn").onclick = () => {
   initAudio();
-  document.getElementById("menu").classList.add("hidden");
-  setTimeout(() => {
+  transitionScreen(() => {
+    state = "mode_selection";
+    document.getElementById("menu").classList.add("hidden");
     document.getElementById("modeMenu").classList.remove("hidden");
-  }, 150);
+  });
 };
 
 document.getElementById("backToMenuBtn").onclick = () => {
-  document.getElementById("modeMenu").classList.add("hidden");
-  setTimeout(() => {
+  initAudio();
+  transitionScreen(() => {
+    state = "menu";
+    document.getElementById("modeMenu").classList.add("hidden");
     document.getElementById("menu").classList.remove("hidden");
-  }, 150);
+  });
 };
 
-document.getElementById("normalBtn").onclick = () => { gameMode = "normal"; triggerIntro(); };
-document.getElementById("hardcoreBtn").onclick = () => { gameMode = "hardcore"; triggerIntro(); };
+document.getElementById("normalBtn").onclick = () => { 
+  initAudio(); 
+  gameMode = "normal"; 
+  state = "intro"; 
+  triggerIntro(); 
+};
+
+document.getElementById("hardcoreBtn").onclick = () => { 
+  initAudio(); 
+  gameMode = "hardcore"; 
+  state = "intro"; 
+  triggerIntro(); 
+};
 
 document.getElementById("retryBtn").onclick = (e) => { 
   e.stopPropagation(); 
-  document.getElementById("gameover").classList.add("hidden");
-  canvas.classList.remove("blur-filter");
-  startGame(); 
+  initAudio();
+  transitionScreen(() => {
+    document.getElementById("gameover").classList.add("hidden");
+    canvas.classList.remove("blur-filter");
+    startGame();
+  });
 };
 
 document.getElementById("resumeBtn").onclick = (e) => { 
   e.stopPropagation(); 
+  initAudio();
   document.getElementById("lifeOverlay").classList.add("hidden");
   canvas.classList.remove("blur-filter");
-  resumeAfterLife(); 
+  state = "playing";
+  updateMusicState(true);
+  resetRun();
 };
 
 document.getElementById("settingsBtn").onclick = () => {
+  initAudio();
   document.getElementById("settingsMenu").classList.remove("hidden");
 };
+
+document.getElementById("pauseSettingsBtn").onclick = () => {
+  document.getElementById("pauseOverlay").classList.add("hidden"); 
+  document.getElementById("settingsMenu").classList.remove("hidden"); 
+};
+
 document.getElementById("closeSettingsBtn").onclick = () => {
   document.getElementById("settingsMenu").classList.add("hidden");
+  if (state === "paused") {
+    document.getElementById("pauseOverlay").classList.remove("hidden");
+  } else {
+    document.getElementById("menu").classList.remove("hidden");
+  }
 };
+
+document.getElementById("quitBtn").onclick = () => { goToMenu(); };
+document.getElementById("quitFromGameOverBtn").onclick = () => { goToMenu(); };
 
 document.getElementById("soundToggleBtn").onclick = () => {
   soundEnabled = !soundEnabled;
@@ -561,21 +666,30 @@ document.getElementById("soundToggleBtn").onclick = () => {
 document.getElementById("musicToggleBtn").onclick = () => {
   musicEnabled = !musicEnabled;
   document.getElementById("musicToggleBtn").innerText = musicEnabled ? "ON" : "OFF";
-  updateMusic();
+  updateMusicState(state === "playing" || state === "menu" || state === "mode_selection" || state === "intro");
+};
+
+document.getElementById("volumeSlider").oninput = (e) => {
+  targetVolume = parseFloat(e.target.value);
+  if (musicEnabled) {
+    currentMusicVolume = targetVolume;
+    bgMusic.volume = currentMusicVolume;
+  }
 };
 
 const pauseBtn = document.getElementById("pauseBtn");
 const pauseOverlay = document.getElementById("pauseOverlay");
 
 function togglePause() {
+  initAudio();
   if (state === "playing") {
     state = "paused";
-    updateMusic();
+    fadeMusicOut();
     canvas.classList.add("blur-filter");
     pauseOverlay.classList.remove("hidden");
   } else if (state === "paused") {
     state = "playing";
-    updateMusic();
+    fadeMusicIn();
     canvas.classList.remove("blur-filter");
     pauseOverlay.classList.add("hidden");
     document.getElementById("settingsMenu").classList.add("hidden"); 
@@ -585,14 +699,8 @@ function togglePause() {
 pauseBtn.onclick = togglePause;
 document.getElementById("resumePauseBtn").onclick = togglePause;
 
-document.getElementById("pauseSettingsBtn").onclick = () => {
-  document.getElementById("settingsMenu").classList.remove("hidden");
-};
-
-document.getElementById("quitBtn").onclick = () => { goToMenu(); };
-document.getElementById("quitFromGameOverBtn").onclick = () => { goToMenu(); };
-
 document.getElementById("donateBtn").onclick = () => {
+  initAudio();
   const wallet = "0x726c79c2d9653fe0e4110e7c70a9f382bcdfb634";
   navigator.clipboard.writeText(wallet).then(() => {
     const toast = document.getElementById("toastNotification");
@@ -607,24 +715,23 @@ document.getElementById("dialogBox").ondblclick = () => {
   if (typeInterval) clearInterval(typeInterval);
   document.getElementById("introOverlay").classList.add("hidden");
   canvas.classList.remove("blur-filter");
-  setTimeout(() => {
+  transitionScreen(() => {
     startGame();
-  }, 300);
+  });
 };
 
 function goToMenu() {
-  state = "menu";
-  updateMusic();
-  canvas.classList.remove("blur-filter");
-  pauseOverlay.classList.add("hidden");
-  document.getElementById("gameover").classList.add("hidden");
-  document.getElementById("lifeOverlay").classList.add("hidden");
-  document.getElementById("modeMenu").classList.add("hidden");
-  document.getElementById("introOverlay").classList.add("hidden");
-  document.getElementById("settingsMenu").classList.add("hidden");
-  setTimeout(() => {
+  transitionScreen(() => {
+    state = "menu";
+    canvas.classList.remove("blur-filter");
+    pauseOverlay.classList.add("hidden");
+    document.getElementById("gameover").classList.add("hidden");
+    document.getElementById("lifeOverlay").classList.add("hidden");
+    document.getElementById("modeMenu").classList.add("hidden");
+    document.getElementById("introOverlay").classList.add("hidden");
+    document.getElementById("settingsMenu").classList.add("hidden");
     document.getElementById("menu").classList.remove("hidden");
-  }, 150);
+  });
 }
 
 function triggerIntro() {
@@ -659,9 +766,9 @@ function triggerIntro() {
 document.getElementById("readyBtn").onclick = () => {
   document.getElementById("introOverlay").classList.add("hidden");
   canvas.classList.remove("blur-filter");
-  setTimeout(() => {
+  transitionScreen(() => {
     startGame();
-  }, 150);
+  });
 };
 
 function startGame() {
@@ -682,7 +789,6 @@ function startGame() {
 
   resetRun();
   state = "playing";
-  updateMusic();
 }
 
 function resetRun() {
@@ -694,13 +800,6 @@ function resetRun() {
   spawnTimer = 0;
   invincible = true;
   invincibleTimer = 120; 
-}
-
-function resumeAfterLife() {
-  state = "playing";
-  updateMusic();
-  canvas.classList.remove("blur-filter");
-  resetRun();
 }
 
 function spawn() {
@@ -1196,14 +1295,24 @@ function loop(timestamp) {
     draw();
   }
 }
-requestAnimationFrame(loop);
+
+window.addEventListener("DOMContentLoaded", () => {
+  bgMusic.volume = currentMusicVolume;
+  bgMusic.play().then(() => {
+    fadeMusicIn();
+  }).catch(() => {
+    console.log("Audio en espera de interacción directa.");
+  });
+  
+  requestAnimationFrame(loop);
+});
 
 function loseLife() {
   if (lives <= 0) {
     gameOverDelayTimer = 45; 
   } else {
     state = "paused";
-    updateMusic();
+    fadeMusicOut();
     canvas.classList.add("blur-filter");
     document.getElementById("lifeText").innerText = `You have ${lives} lives left`;
     document.getElementById("lifeOverlay").classList.remove("hidden");
@@ -1212,7 +1321,7 @@ function loseLife() {
 
 function triggerRealGameOver() {
   state = "gameover";
-  updateMusic();
+  updateMusicState(true);
   canvas.classList.add("blur-filter");
 
   if (scoreRun > highScore) {
@@ -1229,12 +1338,48 @@ function triggerRealGameOver() {
 function setupShare() {
   const btn = document.getElementById("shareX");
   btn.onclick = () => {
-    const text = encodeURIComponent(`I scored ${scoreRun} points in Rat Dash Chaos! https://ograts.github.io/RatDash/ 🐀🎮 #RetroGaming`);
-    window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
+    const shareCanvas = document.createElement("canvas");
+    shareCanvas.width = 600;
+    shareCanvas.height = 315;
+    const sCtx = shareCanvas.getContext("2d");
+
+    sCtx.fillStyle = "#111122";
+    sCtx.fillRect(0, 0, 600, 315);
+    
+    sCtx.strokeStyle = "#f39c12";
+    sCtx.lineWidth = 8;
+    sCtx.strokeRect(10, 10, 580, 295);
+
+    sCtx.fillStyle = "#e67e22";
+    sCtx.font = "20px 'Press Start 2P', monospace";
+    sCtx.fillText("RAT DASH CHAOS", 140, 60);
+
+    if (playerImg.complete) {
+      sCtx.imageRendering = "pixelated";
+      sCtx.drawImage(playerImg, 0, 0, 32, 32, 260, 90, 80, 80);
+    }
+
+    sCtx.fillStyle = "#ffffff";
+    sCtx.font = "14px 'Press Start 2P', monospace";
+    sCtx.fillText(`SCORE: ${scoreRun}`, 180, 210);
+    
+    sCtx.fillStyle = "#f1c40f";
+    sCtx.fillText(`BEST SCORE: ${highScore}`, 140, 250);
+
+    const imageDataUrl = shareCanvas.toDataURL("image/png");
+    const tweetText = encodeURIComponent(`I scored ${scoreRun} points in Rat Dash Chaos! 🐀🎮 BEST Score: ${highScore}. Can you beat me? #RetroGaming #RatDashChaos`);
+    
+    window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, "_blank");
+    
+    const downloadLink = document.createElement("a");
+    downloadLink.download = `rat_dash_record_${scoreRun}.png`;
+    downloadLink.href = imageDataUrl;
+    downloadLink.click();
   };
 }
 
 document.getElementById("fullscreenBtn").onclick = () => {
+  initAudio();
   if (!document.fullscreenElement) {
     document.documentElement.requestFullscreen().then(() => {
       setTimeout(resize, 100); 
