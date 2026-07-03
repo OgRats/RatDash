@@ -20,18 +20,40 @@ body{
   justify-content:center;
   align-items:center;
   background:#000;
+  perspective: 1000px;
 }
 canvas{
   background: linear-gradient(to bottom, #111122, #1a1a2e);
   display:block;
   touch-action:none;
-  transition: filter 0.3s ease;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
   border: 4px solid #222;
+  
+  /* Renderizado Pixel Perfect para alta calidad en Pixel Art */
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+
+  /* Transición fluida combinada para evitar conflictos */
+  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.4s ease, -webkit-filter 0.4s ease;
+  transform: rotateY(0deg);
+  filter: none;
 }
+
+/* Manejo limpio de filtros mediante clases independientes */
 canvas.blur-filter {
   filter: blur(6px) grayscale(80%);
 }
+canvas.mirror-mode {
+  transform: rotateY(180deg);
+  filter: grayscale(100%);
+}
+canvas.blur-filter.mirror-mode {
+  transform: rotateY(180deg);
+  filter: blur(6px) grayscale(100%);
+}
+
 .ui{
   position:absolute;
   inset:0;
@@ -112,7 +134,6 @@ button:active {
   pointer-events: none !important; 
 }
 
-/* BOTONES DE LA ESQUINA SUPERIOR DERECHA */
 #pauseBtn{
   position:fixed;
   top:12px;
@@ -130,7 +151,7 @@ button:active {
 
 #fullscreenBtn {
   position: fixed;
-  top: 23px;
+  top: 12px;
   right: 64px; 
   z-index: 100;
   padding: 10px 14px;
@@ -251,7 +272,7 @@ button:active {
 </head>
 <body>
 
-<button id="fullscreenBtn">🎨 FULLSCREEN</button>
+<button id="fullscreenBtn">📺 FULLSCREEN</button>
 <button id="pauseBtn">⏸</button>
 
 <div id="gameContainer">
@@ -261,7 +282,7 @@ button:active {
 <div id="toastNotification">WALLET COPIED! ✨</div>
 
 <div id="menu" class="ui">
-  <h1>RAT DASH CHAOS</h1>
+  <h1>🐀 RAT DASH CHAOS</h1>
   <button id="playMenuBtn">PLAY</button>
   <button id="settingsBtn">SETTINGS</button>
   <button id="marketplaceBtn" onclick="window.open('https://marketplace.roninchain.com/collections/ograts', '_blank')">🛒 GET YOUR RAT</button>
@@ -269,14 +290,14 @@ button:active {
   <div class="social-container">
     <button class="x-btn" onclick="window.open('https://x.com/OgRats_', '_blank')">X: OG RATS 🐀</button>
     <button class="x-btn" onclick="window.open('https://x.com/NinjaRoninN', '_blank')">X: NINJA RONIN ⚔️</button>
-    <button class="donate-btn" id="donateBtn">📲 SUPPORT</button>
+    <button class="donate-btn" id="donateBtn">☕ DONATE</button>
   </div>
 </div>
 
 <div id="modeMenu" class="ui hidden">
   <h1>SELECT MODE</h1>
   <button id="normalBtn">NORMAL</button>
-  <button id="hardcoreBtn">HARDCORE ☠️</button>
+  <button id="hardcoreBtn">HARDCORE 🔥</button>
   <button id="backToMenuBtn" class="secondary-btn">BACK</button>
 </div>
 
@@ -313,7 +334,7 @@ button:active {
 </div>
 
 <div id="lifeOverlay" class="ui hidden">
-  <h1>TRY AGAIN</h1>
+  <h1>LIVES</h1>
   <h2 id="lifeText" style="font-size:14px; margin-bottom:20px; color:#e74c3c;"></h2>
   <button id="resumeBtn">PLAY AGAIN</button>
 </div>
@@ -339,10 +360,21 @@ function resize() {
   const windowHeight = window.innerHeight;
   let scale = Math.min(windowWidth / V_WIDTH, windowHeight / V_HEIGHT);
   
-  canvas.width = V_WIDTH;
-  canvas.height = V_HEIGHT;
+  // Soporte para pantallas HDPI / Retina (Alta calidad visual interna)
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = V_WIDTH * dpr;
+  canvas.height = V_HEIGHT * dpr;
+  
   canvas.style.width = (V_WIDTH * scale) + "px";
   canvas.style.height = (V_HEIGHT * scale) + "px";
+
+  ctx.scale(dpr, dpr);
+
+  // Desactivar suavizado para nitidez Pixel Perfect limpia
+  ctx.imageSmoothingEnabled = false;
+  ctx.mozImageSmoothingEnabled = false;
+  ctx.webkitImageSmoothingEnabled = false;
+  ctx.msImageSmoothingEnabled = false;
 }
 window.addEventListener("resize", resize);
 resize();
@@ -353,8 +385,7 @@ const fpsInterval = 1000 / 60;
 let state = "menu";
 let gameMode = "normal"; 
 
-// AUDIO (Ruta corregida)
-const bgMusic = new Audio("ogratmusic1.mp3");
+const bgMusic = new Audio("ogratmusic.mp3");
 bgMusic.loop = true;
 let targetVolume = 0.25; 
 let currentMusicVolume = 0.25;
@@ -413,7 +444,6 @@ function transitionScreen(action) {
   }, 300);
 }
 
-// IMÁGENES RECURSOS (Rutas corregidas sin assets/)
 const playerImg = new Image(); playerImg.src = "rat_run.png";
 const floorObstacleImg = new Image(); floorObstacleImg.src = "hongo.png"; 
 const dangerImg = new Image(); dangerImg.src = "danger1.png";
@@ -421,6 +451,7 @@ const bgImg = new Image(); bgImg.src = "gameplaybackground1.png";
 
 const floorImg = new Image(); floorImg.src = "floor.png";
 const floorForestImg = new Image(); floorForestImg.src = "floorforest.png";
+const floorSnowImg = new Image(); floorSnowImg.src = "floorsnow.png"; 
 
 const heartImg = new Image(); heartImg.src = "heart.png";
 const heartEmptyImg = new Image(); heartEmptyImg.src = "heart_empty.png";
@@ -431,8 +462,10 @@ const lavaImg = new Image(); lavaImg.src = "lava.png";
 const hongo2Img = new Image(); hongo2Img.src = "hongo2.png";
 const tanquesImg = new Image(); tanquesImg.src = "tanques.png";
 const monketurtleImg = new Image(); monketurtleImg.src = "monketurtle.png"; 
+const snowmanImg = new Image(); snowmanImg.src = "snowman.png"; 
 const fuegoImg = new Image(); fuegoImg.src = "fuego.png"; 
 const coinImg = new Image(); coinImg.src = "coin.png"; 
+const cambiodireccionImg = new Image(); cambiodireccionImg.src = "cambiodireccion.png"; 
 
 let scoreRun = 0;
 let level = 1;
@@ -451,6 +484,11 @@ let floorScrollX = 0;
 
 let currentZone = 0; 
 let floorTransitionAlpha = 0; 
+let snowTransitionAlpha = 0; 
+
+let isMirrorActive = false;
+let mirrorTimer = 0;
+let nextMirrorScoreThreshold = 10000; 
 
 let invincible = false;
 let invincibleTimer = 0;
@@ -461,7 +499,7 @@ let shakeTimer = 0;
 let shakeIntensity = 0;
 let gameOverDelayTimer = 0; 
 
-let introText = "Let's see how far you can make it in the Rat Race. Don't let the chaos defeat you!";
+let introText = "Let's see how far you can make it in the rat race... Don't get caught by the lava chaos!";
 let textIndex = 0;
 let typeInterval = null;
 
@@ -531,7 +569,6 @@ function playCoinSound() {
   } catch(e) {}
 }
 
-// JUGADOR
 const player = {
   x: 70,
   y: 0,
@@ -583,7 +620,6 @@ window.addEventListener("pointerdown", e => {
   jump();
 });
 
-// INTERFAZ Y FLUJOS CORREGIDOS
 document.getElementById("playMenuBtn").onclick = () => {
   initAudio();
   transitionScreen(() => {
@@ -723,7 +759,8 @@ document.getElementById("dialogBox").ondblclick = () => {
 function goToMenu() {
   transitionScreen(() => {
     state = "menu";
-    canvas.classList.remove("blur-filter");
+    canvas.className = ""; 
+    isMirrorActive = false;
     pauseOverlay.classList.add("hidden");
     document.getElementById("gameover").classList.add("hidden");
     document.getElementById("lifeOverlay").classList.add("hidden");
@@ -783,9 +820,14 @@ function startGame() {
   floatingTexts = [];
   shakeTimer = 0;
   gameOverDelayTimer = 0;
+  isMirrorActive = false;
+  mirrorTimer = 0;
+  nextMirrorScoreThreshold = 10000; 
+  canvas.className = "";
   
   currentZone = (level >= 5) ? 1 : 0;
   floorTransitionAlpha = currentZone; 
+  snowTransitionAlpha = 0;
 
   resetRun();
   state = "playing";
@@ -807,6 +849,8 @@ function spawn() {
   const g = ground();
   const r = Math.random();
   const SIZE_34 = 34;
+
+  const isSnowZone = (scoreRun >= 15000 && scoreRun <= 25000);
 
   if (r < 0.35) {
     let baseWidth = 126; 
@@ -859,10 +903,17 @@ function spawn() {
       });
     }
     else if (selector < 0.74) {
-      obstacles.push({
-        t:"monketurtle", x: V_WIDTH, y: g - SIZE_34, w: 38, h: SIZE_34, 
-        hx: 3, hy: 3, hw: 32, hh: 31, speedMod: 1.05, isCollectible: false
-      });
+      if (isSnowZone) {
+        obstacles.push({
+          t:"snowman", x: V_WIDTH, y: g - SIZE_34, w: 38, h: SIZE_34, 
+          hx: 3, hy: 3, hw: 32, hh: 31, speedMod: 1.05, isCollectible: false
+        });
+      } else {
+        obstacles.push({
+          t:"monketurtle", x: V_WIDTH, y: g - SIZE_34, w: 38, h: SIZE_34, 
+          hx: 3, hy: 3, hw: 32, hh: 31, speedMod: 1.05, isCollectible: false
+        });
+      }
     }
     else if (selector < 0.88) {
       let cantidadFuegos = Math.floor(Math.random() * 3) + 1; 
@@ -939,6 +990,15 @@ function update() {
     if (invincibleTimer <= 0) invincible = false;
   }
 
+  if (isMirrorActive) {
+    mirrorTimer--;
+    if (mirrorTimer <= 0) {
+      isMirrorActive = false;
+      canvas.classList.remove("mirror-mode");
+      addFloatingText(player.x, player.y - 45, "NORMAL MODE", "#2ecc71");
+    }
+  }
+
   const baseSpeedByMode = (gameMode === "hardcore") ? 9.5 : 4.5;
   const speed = baseSpeedByMode + (level * 0.35);
   const rate = Math.max(75 - (level * 4), 26);
@@ -952,6 +1012,12 @@ function update() {
   let currentGround = g - player.h;
   let standingOnPlatform = false;
   let overLava = false;
+
+  if (scoreRun >= 15000 && scoreRun <= 25000) {
+    if (snowTransitionAlpha < 1) snowTransitionAlpha = Math.min(1, snowTransitionAlpha + 0.01);
+  } else {
+    if (snowTransitionAlpha > 0) snowTransitionAlpha = Math.max(0, snowTransitionAlpha - 0.01);
+  }
 
   let targetZone = (Math.floor((level) / 5) % 2 === 1) ? 1 : 0;
   if (currentZone !== targetZone) {
@@ -975,6 +1041,14 @@ function update() {
     obstacles.push({
       t:"coin", x: V_WIDTH, y: coinAlt, w: 25, h: 25,
       hx: 2, hy: 2, hw: 21, hh: 21, speedMod: 1, isCollectible: true
+    });
+  }
+
+  if (scoreRun >= nextMirrorScoreThreshold && !isMirrorActive) {
+    nextMirrorScoreThreshold += 10000; 
+    obstacles.push({
+      t:"cambiodireccion", x: V_WIDTH, y: g - 40, w: 40, h: 40,  
+      hx: 0, hy: 0, hw: 40, hh: 40, speedMod: 1, isCollectible: false, isMirrorTrigger: true
     });
   }
 
@@ -1004,7 +1078,6 @@ function update() {
     if (o.isSolidTop) {
       let oX = o.x;
       const playerBottom = player.y + player.h;
-      
       const overlapsX = pAABB.x < oX + o.w - 4 && pAABB.x + pAABB.w > oX + 4;
       
       if (overlapsX && playerBottom >= o.y && (playerBottom - player.dy) <= o.y + 18 && player.dy >= 0) {
@@ -1034,6 +1107,17 @@ function update() {
     }
 
     if (hit) { 
+      if (o.isMirrorTrigger) {
+        isMirrorActive = true;
+        mirrorTimer = 900; 
+        canvas.classList.add("mirror-mode");
+        addFloatingText(player.x, player.y - 45, "MIRROR REALM! 🌀", "#9b59b6");
+        
+        obstacles = obstacles.filter(item => item.isCollectible); 
+        o.dead = true;
+        continue;
+      }
+
       if (o.isCollectible) {
         if (o.t === "corazon_item") {
           if (lives < MAX_LIVES) {
@@ -1050,13 +1134,13 @@ function update() {
           addFloatingText(o.x, o.y, "+1", "#f1c40f");
           triggerDustBurst(o.x+12, o.y+12, 4, "rgba(241,196,15,");
           
-          if (coins >= 20) {
+          if (coins >= 30) {
             coins = 0;
             if (lives < MAX_LIVES) {
               lives++;
               addFloatingText(player.x, player.y - 40, "EXTRA LIFE!", "#2ecc71");
             } else {
-              scoreRun += 1000;
+              scoreRun += 1500;
             }
           }
         } 
@@ -1173,7 +1257,7 @@ function draw() {
 
   if (floorTransitionAlpha > 0) {
     ctx.save();
-    ctx.globalAlpha = floorTransitionAlpha;
+    ctx.globalAlpha = floorTransitionAlpha * (1 - snowTransitionAlpha);
     let gradient = ctx.createLinearGradient(0, 0, 0, V_HEIGHT - 80);
     gradient.addColorStop(0, "rgba(52, 152, 219, 0.55)"); 
     gradient.addColorStop(1, "rgba(0, 0, 0, 0.85)");       
@@ -1182,27 +1266,51 @@ function draw() {
     ctx.restore();
   }
 
-  const g = ground();
+  if (snowTransitionAlpha > 0) {
+    ctx.save();
+    ctx.globalAlpha = snowTransitionAlpha;
+    let snowGradient = ctx.createLinearGradient(0, 0, 0, V_HEIGHT - 80);
+    snowGradient.addColorStop(0, "rgba(220, 240, 255, 0.65)"); 
+    snowGradient.addColorStop(1, "rgba(140, 190, 230, 0.85)"); 
+    ctx.fillStyle = snowGradient;
+    ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT - 80);
+    ctx.restore();
+  }
 
+  const g = ground();
   let floorW = 64; let floorH = 32;
   let startFX = floorScrollX % floorW;
 
-  if (floorTransitionAlpha < 1 && floorImg.complete) {
+  if (snowTransitionAlpha > 0 && floorSnowImg.complete) {
     ctx.save();
-    ctx.globalAlpha = 1 - floorTransitionAlpha;
+    ctx.globalAlpha = snowTransitionAlpha;
     for (let x = startFX - floorW; x < V_WIDTH + floorW; x += floorW) {
-      ctx.drawImage(floorImg, x, g, floorW, floorH);
-      ctx.drawImage(floorImg, x, g + 32, floorW, floorH); 
+      ctx.drawImage(floorSnowImg, x, g, floorW, floorH);
+      ctx.drawImage(floorSnowImg, x, g + 32, floorW, floorH); 
     }
     ctx.restore();
   }
 
-  if (floorTransitionAlpha > 0 && floorForestImg.complete) {
+  if (snowTransitionAlpha < 1) {
     ctx.save();
-    ctx.globalAlpha = floorTransitionAlpha;
-    for (let x = startFX - floorW; x < V_WIDTH + floorW; x += floorW) {
-      ctx.drawImage(floorForestImg, x, g, floorW, floorH);
-      ctx.drawImage(floorForestImg, x, g + 32, floorW, floorH); 
+    ctx.globalAlpha = 1 - snowTransitionAlpha;
+    if (floorTransitionAlpha < 1 && floorImg.complete) {
+      ctx.save();
+      ctx.globalAlpha = (1 - floorTransitionAlpha);
+      for (let x = startFX - floorW; x < V_WIDTH + floorW; x += floorW) {
+        ctx.drawImage(floorImg, x, g, floorW, floorH);
+        ctx.drawImage(floorImg, x, g + 32, floorW, floorH); 
+      }
+      ctx.restore();
+    }
+    if (floorTransitionAlpha > 0 && floorForestImg.complete) {
+      ctx.save();
+      ctx.globalAlpha = floorTransitionAlpha;
+      for (let x = startFX - floorW; x < V_WIDTH + floorW; x += floorW) {
+        ctx.drawImage(floorForestImg, x, g, floorW, floorH);
+        ctx.drawImage(floorForestImg, x, g + 32, floorW, floorH); 
+      }
+      ctx.restore();
     }
     ctx.restore();
   }
@@ -1217,6 +1325,9 @@ function draw() {
     } else if (o.t === "monketurtle") {
       let tFrame = Math.floor(gameTime / 12) % 2;
       ctx.drawImage(monketurtleImg, tFrame * 32, 0, 32, 32, o.x, o.y, o.w, o.h);
+    } else if (o.t === "snowman") {
+      let sFrame = Math.floor(gameTime / 12) % 2;
+      ctx.drawImage(snowmanImg, sFrame * 32, 0, 32, 32, o.x, o.y, o.w, o.h);
     } else if (o.t === "fuego") {
       let fFrame = Math.floor(gameTime / 8) % 3;
       ctx.drawImage(fuegoImg, fFrame * 32, 0, 32, 32, o.x, o.y, o.w, o.h);
@@ -1233,6 +1344,13 @@ function draw() {
       ctx.drawImage(quesoImg, o.x, o.y, o.w, o.h);
     } else if (o.t === "corazon_item") {
       ctx.drawImage(heartImg, o.x, o.y, o.w, o.h);
+    } else if (o.t === "cambiodireccion") {
+      ctx.save();
+      let glowPulse = 8 + Math.sin(gameTime * 0.15) * 5;
+      ctx.shadowColor = "#f1c40f";
+      ctx.shadowBlur = glowPulse;
+      ctx.drawImage(cambiodireccionImg, o.x, o.y, o.w, o.h);
+      ctx.restore();
     }
   }
 
@@ -1275,7 +1393,7 @@ function draw() {
     ctx.drawImage(coinImg, coinHUDFrame * 32, 0, 32, 32, 15, 90, 22, 22);
   }
   ctx.fillStyle = "#f1c40f";
-  ctx.fillText(`${coins}/20`, 45, 107);
+  ctx.fillText(`${coins}/30`, 45, 107); 
 
   ctx.font = "10px 'Press Start 2P'";
   for (let t of floatingTexts) {
@@ -1300,9 +1418,7 @@ window.addEventListener("DOMContentLoaded", () => {
   bgMusic.volume = currentMusicVolume;
   bgMusic.play().then(() => {
     fadeMusicIn();
-  }).catch(() => {
-    console.log("Audio en espera de interacción directa.");
-  });
+  }).catch(() => {});
   
   requestAnimationFrame(loop);
 });
@@ -1362,17 +1478,20 @@ function setupShare() {
     sCtx.fillStyle = "#ffffff";
     sCtx.font = "14px 'Press Start 2P', monospace";
     sCtx.fillText(`SCORE: ${scoreRun}`, 180, 210);
+    sCtx.fillText(`MODE: ${gameMode.toUpperCase()}`, 180, 235); 
     
     sCtx.fillStyle = "#f1c40f";
-    sCtx.fillText(`BEST SCORE: ${highScore}`, 140, 250);
+    sCtx.fillText(`BEST SCORE: ${highScore}`, 140, 270);
 
     const imageDataUrl = shareCanvas.toDataURL("image/png");
-    const tweetText = encodeURIComponent(`I scored ${scoreRun} points in Rat Dash Chaos! 🐀🎮 BEST Score: ${highScore}. Can you beat me? #RetroGaming #RatDashChaos`);
+    
+    const modeString = gameMode === "hardcore" ? "🔥 HARDCORE MODE 🔥" : "NORMAL MODE";
+    const tweetText = encodeURIComponent(`I scored ${scoreRun} points in Rat Dash Chaos (${modeString})! 🐀🎮 BEST Score: ${highScore}. Can you beat me? #RetroGaming #RatDashChaos`);
     
     window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, "_blank");
     
     const downloadLink = document.createElement("a");
-    downloadLink.download = `rat_dash_record_${scoreRun}.png`;
+    downloadLink.download = `rat_dash_${gameMode}_record_${scoreRun}.png`;
     downloadLink.href = imageDataUrl;
     downloadLink.click();
   };
@@ -1397,3 +1516,4 @@ document.addEventListener("fullscreenchange", resize);
 </script>
 </body>
 </html>
+ 
