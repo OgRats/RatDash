@@ -1486,7 +1486,7 @@ function setupShare() {
     const imageDataUrl = shareCanvas.toDataURL("image/png");
     
     const modeString = gameMode === "hardcore" ? "🔥 HARDCORE MODE 🔥" : "NORMAL MODE";
-    const tweetText = encodeURIComponent(`I scored ${scoreRun} points in Rat Dash Chaos (${modeString})! 🐀🎮 BEST Score: ${highScore}. Can you beat me? #RetroGaming #RatDashChaos`);
+    const tweetText = encodeURIComponent(`I scored ${scoreRun} points in Rat Dash Chaos (${modeString})! 🐀🎮 BEST Score: ${highScore}. Can you beat me? https://ograts.github.io/RatDash/ #RetroGaming #RatDashChaos`);
     
     window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, "_blank");
     
